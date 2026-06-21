@@ -112,17 +112,22 @@ class SpheroSpidermanCoordinator(DataUpdateCoordinator[P.ToyState]):
         client = await establish_connection(BleakClient, device, self.address)
         self._client = client
         try:
-            # Status arrives on CHAR_NOTIFY (740563D5); each chunk must be ack'd by writing to
-            # CHAR_ACK (1EAEBABD) for the toy to send the next one (its flow control).
-            await client.start_notify(P.CHAR_NOTIFY, self._on_notify)
+            # Status arrives on CHAR_NOTIFY (740563D5); each chunk is ack'd by writing to
+            # CHAR_ACK (1EAEBABD). The toy has NO standard 0x2902 CCCD on its notify char, so
+            # some transports (ESPHome proxy) can't subscribe — make that non-fatal: keep the
+            # link up write-only so commands (buttons) still work, status just won't update.
+            notify_ok = await self._enable_notify(client)
             self._last_frame = time.monotonic()
             # Onboard first: the toy gates action ops behind a BLE login. Verified live that
             # LOGIN + GET_SETUP_STATE clears the setup gate so ATTACK/etc. are accepted.
             await self._onboard()
-            # Prime the toy with info/battery queries.
+            # Prime the toy with info/battery queries (only meaningful if notify is up).
             await self.async_send(P.Op.GET_TOY_INFO)
             await self.async_send(P.Op.GET_BATTERY_STATUS)
-            await self._watchdog(client)
+            # Publish state so entities (esp. command buttons) flip to available now we're linked.
+            self.async_set_updated_data(self._state)
+            _LOGGER.warning("%s: CONNECTED (status notify=%s)", self.name, notify_ok)
+            await self._watchdog(client, notify_ok)
         finally:
             self._client = None
             try:
@@ -130,11 +135,28 @@ class SpheroSpidermanCoordinator(DataUpdateCoordinator[P.ToyState]):
             except Exception:  # noqa: BLE001
                 pass
 
-    async def _watchdog(self, client: BleakClient) -> None:
-        """Hold the connection; reconnect if frames go stale."""
+    async def _enable_notify(self, client: BleakClient) -> bool:
+        """Subscribe to status notifications. The toy's notify char lacks a standard 0x2902
+        CCCD; BlueZ tolerates this but ESPHome-proxy/CoreBluetooth backends raise. On failure
+        we stay connected write-only (commands work; status sensors won't update). Returns
+        True if notifications are flowing."""
+        try:
+            await client.start_notify(P.CHAR_NOTIFY, self._on_notify)
+            return True
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning(
+                "%s: status notify unavailable on this transport (%r) — running write-only "
+                "(commands work; status sensors stay unknown). Use a BlueZ adapter for status.",
+                self.name, err,
+            )
+            return False
+
+    async def _watchdog(self, client: BleakClient, notify_ok: bool = True) -> None:
+        """Hold the connection. With notify, reconnect if status frames go stale; without it,
+        just hold the link so command buttons stay available (no frames are expected)."""
         while not self._stop.is_set() and client.is_connected:
             await self._sleep(15.0)
-            if time.monotonic() - self._last_frame > STALE_AFTER:
+            if notify_ok and time.monotonic() - self._last_frame > STALE_AFTER:
                 _LOGGER.debug("no frames for %ss; reconnecting", STALE_AFTER)
                 return
 
