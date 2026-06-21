@@ -1,0 +1,69 @@
+rules:
+  # Bronze
+  action-setup:
+    status: done
+    comment: send_command registered idempotently at entry setup.
+  appropriate-polling:
+    status: exempt
+    comment: Push-based (local_push); the device notifies. No polling.
+  brands: todo
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency: done
+  docs-actions: done
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  entity-event-setup: done
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure:
+    status: exempt
+    comment: Discovery validates the BLE advertisement; connection is established async post-setup.
+  test-before-setup:
+    status: exempt
+    comment: The figure sleeps aggressively and may be out of range at setup; the coordinator
+      connects opportunistically with capped-backoff reconnect rather than failing setup.
+  unique-config-entry: done
+
+  # Silver (aspirational)
+  action-exceptions: done
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: exempt
+    comment: No configurable options.
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: todo
+  parallel-updates: todo
+  reauthentication-flow:
+    status: exempt
+    comment: No authentication.
+  test-coverage: todo
+
+  # Gold / Platinum (aspirational)
+  devices: done
+  diagnostics: todo
+  discovery: done
+  discovery-update-info:
+    status: exempt
+    comment: Address is the stable identifier; the figure uses a resolvable private address
+      but HA resolves it to the identity address.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations: todo
+  icon-translations: todo
+  reconfiguration-flow: todo
+  stale-devices:
+    status: exempt
+    comment: Single device per entry; removed by deleting the entry.
+  async-dependency: done
+  inject-websession:
+    status: exempt
+    comment: No HTTP; BLE only.
+  strict-typing: todo

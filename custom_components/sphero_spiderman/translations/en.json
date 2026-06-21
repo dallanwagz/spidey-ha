@@ -1,0 +1,108 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "confirm": {
+        "description": "Do you want to set up {name}? Keep the Spider-Man app closed so Home Assistant can hold the connection."
+      },
+      "user": {
+        "description": "Select the Spider-Man figure to add.",
+        "data": {
+          "address": "Device"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "no_devices_found": "[%key:common::config_flow::abort::no_devices_found%]"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Eye-expression control (optional)",
+        "description": "Set a private-key path to enable the Eye expression control. It is driven over SSH (root) on the figure, separate from Bluetooth. Leave the key blank to disable it. Home Assistant must be able to reach the figure over SSH.",
+        "data": {
+          "eye_ssh_key": "SSH private key path",
+          "eye_ssh_host": "Figure host/IP",
+          "eye_ssh_port": "SSH port",
+          "eye_ssh_user": "SSH username"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery": { "name": "Battery" },
+      "volume": { "name": "Volume" },
+      "firmware": { "name": "Firmware version" }
+    },
+    "binary_sensor": {
+      "charging": { "name": "Charging" }
+    },
+    "number": {
+      "volume": { "name": "Volume" }
+    },
+    "button": {
+      "attack": { "name": "Attack" },
+      "beep": { "name": "Beep" },
+      "start_play": { "name": "Start play" },
+      "sleep": { "name": "Sleep" }
+    },
+    "select": {
+      "eye_expression": {
+        "name": "Eye expression",
+        "state": {
+          "neutral": "Neutral",
+          "happy": "Happy",
+          "mad": "Mad",
+          "blink": "Blink",
+          "laugh": "Laugh",
+          "surprised": "Surprised",
+          "squinting": "Squinting",
+          "look_around": "Look around",
+          "sleepy": "Sleepy",
+          "wink": "Wink"
+        }
+      }
+    }
+  },
+  "services": {
+    "send_command": {
+      "name": "Send command",
+      "description": "Sends a raw protocol command (messageId) to the figure.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Spider-Man figure to send the command to."
+        },
+        "command": {
+          "name": "Command",
+          "description": "The operation name to send (e.g. START_PLAY, GET_BATTERY_STATUS)."
+        },
+        "data": {
+          "name": "Data",
+          "description": "Optional DT payload string for the command."
+        }
+      }
+    },
+    "connect_wifi": {
+      "name": "Connect to WiFi",
+      "description": "Provisions the figure onto a WiFi network over Bluetooth (CONNECT_TO_SSID).",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Spider-Man figure to provision."
+        },
+        "ssid": {
+          "name": "SSID",
+          "description": "The WiFi network name."
+        },
+        "password": {
+          "name": "Password",
+          "description": "The WiFi password (sent over the encoded BLE frame)."
+        }
+      }
+    }
+  }
+}

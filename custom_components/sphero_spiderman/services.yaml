@@ -1,0 +1,36 @@
+send_command:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: sphero_spiderman
+    command:
+      required: true
+      example: ATTACK
+      selector:
+        text:
+    data:
+      required: false
+      example: ""
+      selector:
+        text:
+
+connect_wifi:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: sphero_spiderman
+    ssid:
+      required: true
+      example: MyWiFi
+      selector:
+        text:
+    password:
+      required: false
+      example: ""
+      selector:
+        text:
+          type: password
