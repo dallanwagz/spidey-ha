@@ -17,7 +17,10 @@ Bluetooth LE — no cloud, no vendor app (Sphero's `smarttoy.org` servers are de
 > `740563D5`**, **ack each notify chunk → `1EAEBABD`** (`\x01`).
 
 ## What works
-- **BLE, local push.** Auto-discovers the figure (it advertises a name starting `ST…`).
+- **BLE, local push.** Add via **+ Add Integration → Sphero Spider-Man**, which scans for the
+  figure's `ST…` advertisement and lets you pick it. (Auto-discovery isn't used: the figure
+  advertises only a 2-char `ST` name prefix, and HA disallows local-name matchers with a wildcard in
+  the first 3 characters.)
 - **Sensors:** Battery %, Volume, Firmware (diagnostic); **Charging** binary sensor.
 - **Buttons:** **Attack** (verified), **Beep**, **Start play**, **Sleep**.
 - **Volume number:** sets `CHANGE_VOLUME`.
@@ -39,9 +42,9 @@ the figure's setup gate so action commands are accepted.
 ## Install (HACS)
 1. HACS → ⋮ → **Custom repositories** → add this repo, category **Integration**.
 2. Install **Sphero Spider-Man**, restart HA.
-3. The figure should be auto-discovered (**Settings → Devices & Services**). Otherwise **+ Add
-   Integration → Sphero Spider-Man** and pick it from the list. Keep the vendor app closed — the
-   figure accepts a single BLE connection.
+3. **Settings → Devices & Services → + Add Integration → Sphero Spider-Man**, then pick the figure's
+   `ST…` device from the scan. (Make sure the figure is advertising and within a few metres of a
+   BLE adapter/proxy.) Keep the vendor app closed — the figure accepts a single BLE connection.
 
 ## Advertising / reconnect
 The figure only advertises (`ST…`) for a window after its toy app (re)starts, and stops once a
