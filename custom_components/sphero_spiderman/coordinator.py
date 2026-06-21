@@ -61,24 +61,50 @@ class SpheroSpidermanCoordinator(DataUpdateCoordinator[P.ToyState]):
         return self._client is not None and self._client.is_connected
 
     # ---- connection loop -------------------------------------------------
+    def _find_device(self) -> BLEDevice | None:
+        """Find the figure's current connectable BLEDevice.
+
+        The figure advertises under a ROTATING resolvable-private-address, so a fixed
+        configured address goes stale. Try the configured address first, then fall back to
+        matching the advertised name among currently-seen connectable devices, updating
+        self.address to whatever it's using now.
+        """
+        device = bluetooth.async_ble_device_from_address(
+            self.hass, self.address, connectable=True
+        )
+        if device is not None:
+            return device
+        for si in bluetooth.async_discovered_service_info(self.hass, connectable=True):
+            if si.name and (si.name == self.name or si.name.startswith("ST")):
+                if si.address != self.address:
+                    _LOGGER.warning(
+                        "%s now advertising as %s (rotated address); using it",
+                        self.name, si.address,
+                    )
+                    self.address = si.address
+                return si.device
+        return None
+
     async def _run(self) -> None:
         backoff = RECONNECT_BACKOFF_MIN
         while not self._stop.is_set():
-            device = bluetooth.async_ble_device_from_address(
-                self.hass, self.address, connectable=True
-            )
+            device = self._find_device()
             if device is None:
-                _LOGGER.debug("%s not seen by any adapter/proxy; waiting", self.address)
+                _LOGGER.warning(
+                    "%s: no CONNECTABLE device seen for it yet (need an ESPHome proxy with "
+                    "active connections in range, or it isn't advertising); waiting", self.name
+                )
                 await self._sleep(backoff)
                 backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
                 continue
             try:
+                _LOGGER.warning("%s: connecting to %s …", self.name, device.address)
                 await self._connect_and_serve(device)
                 backoff = RECONNECT_BACKOFF_MIN
             except asyncio.CancelledError:
                 raise
             except Exception as err:  # noqa: BLE001
-                _LOGGER.debug("connection cycle ended: %s", err)
+                _LOGGER.warning("%s: connection cycle failed: %r", self.name, err)
                 await self._sleep(backoff)
                 backoff = min(backoff * 2, RECONNECT_BACKOFF_MAX)
 
